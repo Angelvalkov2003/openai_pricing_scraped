@@ -1,0 +1,1 @@
+to run: py -3 OpenAIScraper_4.py -o openai_pricing_scraped_v4.json

@@ -1,6 +1,6 @@
 {
   "provider": "openai",
-  "last_updated": "2026-03-22 19:34:30",
+  "last_updated": "2026-03-22 22:50:15",
   "source_url": "https://developers.openai.com/api/docs/pricing?latest-pricing=batch&ft-pricing=standard",
   "extracted_tables": [
     {
@@ -96,6 +96,46 @@
             }
           ]
         },
+        "flex": {
+          "rows": [
+            {
+              "Model": "gpt-5.4",
+              "Short context | Input": "$1.25",
+              "Short context | Cached input": "$0.13",
+              "Short context | Output": "$7.50",
+              "Long context | Input": "$2.50",
+              "Long context | Cached input": "$0.25",
+              "Long context | Output": "$11.25"
+            },
+            {
+              "Model": "gpt-5.4-mini",
+              "Short context | Input": "$0.375",
+              "Short context | Cached input": "$0.0375",
+              "Short context | Output": "$2.25",
+              "Long context | Input": "-",
+              "Long context | Cached input": "-",
+              "Long context | Output": "-"
+            },
+            {
+              "Model": "gpt-5.4-nano",
+              "Short context | Input": "$0.10",
+              "Short context | Cached input": "$0.01",
+              "Short context | Output": "$0.625",
+              "Long context | Input": "-",
+              "Long context | Cached input": "-",
+              "Long context | Output": "-"
+            },
+            {
+              "Model": "gpt-5.4-pro",
+              "Short context | Input": "$15.00",
+              "Short context | Cached input": "-",
+              "Short context | Output": "$90.00",
+              "Long context | Input": "$30.00",
+              "Long context | Cached input": "-",
+              "Long context | Output": "$135.00"
+            }
+          ]
+        },
         "priority": {
           "rows": [
             {
@@ -109,17 +149,6 @@
             }
           ]
         }
-      },
-      "pricing_control": {
-        "type": "content_switcher",
-        "dom_index": 0,
-        "aria_label": "Content switcher",
-        "options_from_dom": [
-          "standard",
-          "batch",
-          "flex",
-          "priority"
-        ]
       }
     },
     {
@@ -682,17 +711,6 @@
             }
           ]
         }
-      },
-      "pricing_control": {
-        "type": "content_switcher",
-        "dom_index": 0,
-        "aria_label": "Content switcher",
-        "options_from_dom": [
-          "standard",
-          "batch",
-          "flex",
-          "priority"
-        ]
       }
     },
     {
@@ -906,18 +924,610 @@
               "Output / cost": "-"
             }
           ]
+        },
+        "batch": {
+          "rows": [
+            {
+              "Model": "gpt-realtime-1.5",
+              "Modality": "Audio",
+              "Input": "$32.00",
+              "Cached input": "$0.40",
+              "Output / cost": "$64.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$4.00",
+                  "Input": "$0.40",
+                  "Cached input": "$16.00",
+                  "Output / cost": ""
+                },
+                "Image": {
+                  "Modality": "$5.00",
+                  "Input": "$0.50",
+                  "Cached input": "-",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-realtime-mini",
+              "Modality": "Audio",
+              "Input": "$10.00",
+              "Cached input": "$0.30",
+              "Output / cost": "$20.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$0.60",
+                  "Input": "$0.06",
+                  "Cached input": "$2.40",
+                  "Output / cost": ""
+                },
+                "Image": {
+                  "Modality": "$0.80",
+                  "Input": "$0.08",
+                  "Cached input": "-",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-realtime",
+              "Modality": "Audio",
+              "Input": "$32.00",
+              "Cached input": "$0.40",
+              "Output / cost": "$64.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$4.00",
+                  "Input": "$0.40",
+                  "Cached input": "$16.00",
+                  "Output / cost": ""
+                },
+                "Image": {
+                  "Modality": "$5.00",
+                  "Input": "$0.50",
+                  "Cached input": "-",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-4o-realtime-preview",
+              "Modality": "Audio",
+              "Input": "$40.00",
+              "Cached input": "$2.50",
+              "Output / cost": "$80.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$5.00",
+                  "Input": "$2.50",
+                  "Cached input": "$20.00",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-4o-mini-realtime-preview",
+              "Modality": "Audio",
+              "Input": "$10.00",
+              "Cached input": "$0.30",
+              "Output / cost": "$20.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$0.60",
+                  "Input": "$0.30",
+                  "Cached input": "$2.40",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-audio-1.5",
+              "Modality": "Audio",
+              "Input": "$32.00",
+              "Cached input": "-",
+              "Output / cost": "$64.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$2.50",
+                  "Input": "-",
+                  "Cached input": "$10.00",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-audio-mini",
+              "Modality": "Audio",
+              "Input": "$10.00",
+              "Cached input": "-",
+              "Output / cost": "$20.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$0.60",
+                  "Input": "-",
+                  "Cached input": "$2.40",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-audio",
+              "Modality": "Audio",
+              "Input": "$32.00",
+              "Cached input": "-",
+              "Output / cost": "$64.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$2.50",
+                  "Input": "-",
+                  "Cached input": "$10.00",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-4o-audio-preview",
+              "Modality": "Audio",
+              "Input": "$40.00",
+              "Cached input": "-",
+              "Output / cost": "$80.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$2.50",
+                  "Input": "-",
+                  "Cached input": "$10.00",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-4o-mini-audio-preview",
+              "Modality": "Audio",
+              "Input": "$10.00",
+              "Cached input": "-",
+              "Output / cost": "$20.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$0.15",
+                  "Input": "-",
+                  "Cached input": "$0.60",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-4o-mini-tts",
+              "Modality": "Audio",
+              "Input": "-",
+              "Cached input": "-",
+              "Output / cost": "$12.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$0.60",
+                  "Input": "-",
+                  "Cached input": "-",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "tts-1",
+              "Modality": "Text",
+              "Input": "$15.00 / 1M characters",
+              "Cached input": "-",
+              "Output / cost": "-"
+            },
+            {
+              "Model": "tts-1-hd",
+              "Modality": "Text",
+              "Input": "$30.00 / 1M characters",
+              "Cached input": "-",
+              "Output / cost": "-"
+            }
+          ]
+        },
+        "flex": {
+          "rows": [
+            {
+              "Model": "gpt-realtime-1.5",
+              "Modality": "Audio",
+              "Input": "$32.00",
+              "Cached input": "$0.40",
+              "Output / cost": "$64.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$4.00",
+                  "Input": "$0.40",
+                  "Cached input": "$16.00",
+                  "Output / cost": ""
+                },
+                "Image": {
+                  "Modality": "$5.00",
+                  "Input": "$0.50",
+                  "Cached input": "-",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-realtime-mini",
+              "Modality": "Audio",
+              "Input": "$10.00",
+              "Cached input": "$0.30",
+              "Output / cost": "$20.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$0.60",
+                  "Input": "$0.06",
+                  "Cached input": "$2.40",
+                  "Output / cost": ""
+                },
+                "Image": {
+                  "Modality": "$0.80",
+                  "Input": "$0.08",
+                  "Cached input": "-",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-realtime",
+              "Modality": "Audio",
+              "Input": "$32.00",
+              "Cached input": "$0.40",
+              "Output / cost": "$64.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$4.00",
+                  "Input": "$0.40",
+                  "Cached input": "$16.00",
+                  "Output / cost": ""
+                },
+                "Image": {
+                  "Modality": "$5.00",
+                  "Input": "$0.50",
+                  "Cached input": "-",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-4o-realtime-preview",
+              "Modality": "Audio",
+              "Input": "$40.00",
+              "Cached input": "$2.50",
+              "Output / cost": "$80.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$5.00",
+                  "Input": "$2.50",
+                  "Cached input": "$20.00",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-4o-mini-realtime-preview",
+              "Modality": "Audio",
+              "Input": "$10.00",
+              "Cached input": "$0.30",
+              "Output / cost": "$20.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$0.60",
+                  "Input": "$0.30",
+                  "Cached input": "$2.40",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-audio-1.5",
+              "Modality": "Audio",
+              "Input": "$32.00",
+              "Cached input": "-",
+              "Output / cost": "$64.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$2.50",
+                  "Input": "-",
+                  "Cached input": "$10.00",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-audio-mini",
+              "Modality": "Audio",
+              "Input": "$10.00",
+              "Cached input": "-",
+              "Output / cost": "$20.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$0.60",
+                  "Input": "-",
+                  "Cached input": "$2.40",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-audio",
+              "Modality": "Audio",
+              "Input": "$32.00",
+              "Cached input": "-",
+              "Output / cost": "$64.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$2.50",
+                  "Input": "-",
+                  "Cached input": "$10.00",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-4o-audio-preview",
+              "Modality": "Audio",
+              "Input": "$40.00",
+              "Cached input": "-",
+              "Output / cost": "$80.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$2.50",
+                  "Input": "-",
+                  "Cached input": "$10.00",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-4o-mini-audio-preview",
+              "Modality": "Audio",
+              "Input": "$10.00",
+              "Cached input": "-",
+              "Output / cost": "$20.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$0.15",
+                  "Input": "-",
+                  "Cached input": "$0.60",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-4o-mini-tts",
+              "Modality": "Audio",
+              "Input": "-",
+              "Cached input": "-",
+              "Output / cost": "$12.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$0.60",
+                  "Input": "-",
+                  "Cached input": "-",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "tts-1",
+              "Modality": "Text",
+              "Input": "$15.00 / 1M characters",
+              "Cached input": "-",
+              "Output / cost": "-"
+            },
+            {
+              "Model": "tts-1-hd",
+              "Modality": "Text",
+              "Input": "$30.00 / 1M characters",
+              "Cached input": "-",
+              "Output / cost": "-"
+            }
+          ]
+        },
+        "priority": {
+          "rows": [
+            {
+              "Model": "gpt-realtime-1.5",
+              "Modality": "Audio",
+              "Input": "$32.00",
+              "Cached input": "$0.40",
+              "Output / cost": "$64.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$4.00",
+                  "Input": "$0.40",
+                  "Cached input": "$16.00",
+                  "Output / cost": ""
+                },
+                "Image": {
+                  "Modality": "$5.00",
+                  "Input": "$0.50",
+                  "Cached input": "-",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-realtime-mini",
+              "Modality": "Audio",
+              "Input": "$10.00",
+              "Cached input": "$0.30",
+              "Output / cost": "$20.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$0.60",
+                  "Input": "$0.06",
+                  "Cached input": "$2.40",
+                  "Output / cost": ""
+                },
+                "Image": {
+                  "Modality": "$0.80",
+                  "Input": "$0.08",
+                  "Cached input": "-",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-realtime",
+              "Modality": "Audio",
+              "Input": "$32.00",
+              "Cached input": "$0.40",
+              "Output / cost": "$64.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$4.00",
+                  "Input": "$0.40",
+                  "Cached input": "$16.00",
+                  "Output / cost": ""
+                },
+                "Image": {
+                  "Modality": "$5.00",
+                  "Input": "$0.50",
+                  "Cached input": "-",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-4o-realtime-preview",
+              "Modality": "Audio",
+              "Input": "$40.00",
+              "Cached input": "$2.50",
+              "Output / cost": "$80.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$5.00",
+                  "Input": "$2.50",
+                  "Cached input": "$20.00",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-4o-mini-realtime-preview",
+              "Modality": "Audio",
+              "Input": "$10.00",
+              "Cached input": "$0.30",
+              "Output / cost": "$20.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$0.60",
+                  "Input": "$0.30",
+                  "Cached input": "$2.40",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-audio-1.5",
+              "Modality": "Audio",
+              "Input": "$32.00",
+              "Cached input": "-",
+              "Output / cost": "$64.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$2.50",
+                  "Input": "-",
+                  "Cached input": "$10.00",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-audio-mini",
+              "Modality": "Audio",
+              "Input": "$10.00",
+              "Cached input": "-",
+              "Output / cost": "$20.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$0.60",
+                  "Input": "-",
+                  "Cached input": "$2.40",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-audio",
+              "Modality": "Audio",
+              "Input": "$32.00",
+              "Cached input": "-",
+              "Output / cost": "$64.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$2.50",
+                  "Input": "-",
+                  "Cached input": "$10.00",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-4o-audio-preview",
+              "Modality": "Audio",
+              "Input": "$40.00",
+              "Cached input": "-",
+              "Output / cost": "$80.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$2.50",
+                  "Input": "-",
+                  "Cached input": "$10.00",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-4o-mini-audio-preview",
+              "Modality": "Audio",
+              "Input": "$10.00",
+              "Cached input": "-",
+              "Output / cost": "$20.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$0.15",
+                  "Input": "-",
+                  "Cached input": "$0.60",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-4o-mini-tts",
+              "Modality": "Audio",
+              "Input": "-",
+              "Cached input": "-",
+              "Output / cost": "$12.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$0.60",
+                  "Input": "-",
+                  "Cached input": "-",
+                  "Output / cost": ""
+                }
+              }
+            },
+            {
+              "Model": "tts-1",
+              "Modality": "Text",
+              "Input": "$15.00 / 1M characters",
+              "Cached input": "-",
+              "Output / cost": "-"
+            },
+            {
+              "Model": "tts-1-hd",
+              "Modality": "Text",
+              "Input": "$30.00 / 1M characters",
+              "Cached input": "-",
+              "Output / cost": "-"
+            }
+          ]
         }
-      },
-      "pricing_control": {
-        "type": "content_switcher",
-        "dom_index": 0,
-        "aria_label": "Content switcher",
-        "options_from_dom": [
-          "standard",
-          "batch",
-          "flex",
-          "priority"
-        ]
       }
     },
     {
@@ -994,18 +1604,199 @@
               }
             }
           ]
+        },
+        "batch": {
+          "rows": [
+            {
+              "Model": "gpt-image-1.5",
+              "Modality": "Image",
+              "Input": "$4.00",
+              "Cached input": "$1.00",
+              "Output": "$16.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$2.50",
+                  "Input": "$0.63",
+                  "Cached input": "$5.00",
+                  "Output": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-image-1-mini",
+              "Modality": "Image",
+              "Input": "$1.25",
+              "Cached input": "$0.13",
+              "Output": "$4.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$1.00",
+                  "Input": "$0.10",
+                  "Cached input": "-",
+                  "Output": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-image-1",
+              "Modality": "Image",
+              "Input": "$5.00",
+              "Cached input": "$1.25",
+              "Output": "$20.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$2.50",
+                  "Input": "$0.63",
+                  "Cached input": "-",
+                  "Output": ""
+                }
+              }
+            },
+            {
+              "Model": "chatgpt-image-latest",
+              "Modality": "Image",
+              "Input": "$4.00",
+              "Cached input": "$1.00",
+              "Output": "$16.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$2.50",
+                  "Input": "$0.63",
+                  "Cached input": "$5.00",
+                  "Output": ""
+                }
+              }
+            }
+          ]
+        },
+        "flex": {
+          "rows": [
+            {
+              "Model": "gpt-image-1.5",
+              "Modality": "Image",
+              "Input": "$8.00",
+              "Cached input": "$2.00",
+              "Output": "$32.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$5.00",
+                  "Input": "$1.25",
+                  "Cached input": "$10.00",
+                  "Output": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-image-1-mini",
+              "Modality": "Image",
+              "Input": "$2.50",
+              "Cached input": "$0.25",
+              "Output": "$8.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$2.00",
+                  "Input": "$0.20",
+                  "Cached input": "-",
+                  "Output": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-image-1",
+              "Modality": "Image",
+              "Input": "$10.00",
+              "Cached input": "$2.50",
+              "Output": "$40.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$5.00",
+                  "Input": "$1.25",
+                  "Cached input": "-",
+                  "Output": ""
+                }
+              }
+            },
+            {
+              "Model": "chatgpt-image-latest",
+              "Modality": "Image",
+              "Input": "$8.00",
+              "Cached input": "$2.00",
+              "Output": "$32.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$5.00",
+                  "Input": "$1.25",
+                  "Cached input": "$10.00",
+                  "Output": ""
+                }
+              }
+            }
+          ]
+        },
+        "priority": {
+          "rows": [
+            {
+              "Model": "gpt-image-1.5",
+              "Modality": "Image",
+              "Input": "$8.00",
+              "Cached input": "$2.00",
+              "Output": "$32.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$5.00",
+                  "Input": "$1.25",
+                  "Cached input": "$10.00",
+                  "Output": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-image-1-mini",
+              "Modality": "Image",
+              "Input": "$2.50",
+              "Cached input": "$0.25",
+              "Output": "$8.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$2.00",
+                  "Input": "$0.20",
+                  "Cached input": "-",
+                  "Output": ""
+                }
+              }
+            },
+            {
+              "Model": "gpt-image-1",
+              "Modality": "Image",
+              "Input": "$10.00",
+              "Cached input": "$2.50",
+              "Output": "$40.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$5.00",
+                  "Input": "$1.25",
+                  "Cached input": "-",
+                  "Output": ""
+                }
+              }
+            },
+            {
+              "Model": "chatgpt-image-latest",
+              "Modality": "Image",
+              "Input": "$8.00",
+              "Cached input": "$2.00",
+              "Output": "$32.00",
+              "by_modality": {
+                "Text": {
+                  "Modality": "$5.00",
+                  "Input": "$1.25",
+                  "Cached input": "$10.00",
+                  "Output": ""
+                }
+              }
+            }
+          ]
         }
-      },
-      "pricing_control": {
-        "type": "content_switcher",
-        "dom_index": 0,
-        "aria_label": "Content switcher",
-        "options_from_dom": [
-          "standard",
-          "batch",
-          "flex",
-          "priority"
-        ]
       }
     },
     {
@@ -1050,16 +1841,103 @@
               "Price per second": ""
             }
           ]
+        },
+        "batch": {
+          "rows": [
+            {
+              "Model": "sora-2",
+              "Size": "720p",
+              "Portrait": "720x1280",
+              "Landscape": "1280x720",
+              "Price per second": "$0.05"
+            },
+            {
+              "Model": "sora-2-pro",
+              "Size": "720p",
+              "Portrait": "720x1280",
+              "Landscape": "1280x720",
+              "Price per second": "$0.15"
+            },
+            {
+              "Model": "1024p",
+              "Size": "1024x1792",
+              "Portrait": "1792x1024",
+              "Landscape": "$0.25",
+              "Price per second": ""
+            },
+            {
+              "Model": "1080p",
+              "Size": "1080x1920",
+              "Portrait": "1920x1080",
+              "Landscape": "$0.35",
+              "Price per second": ""
+            }
+          ]
+        },
+        "flex": {
+          "rows": [
+            {
+              "Model": "sora-2",
+              "Size": "720p",
+              "Portrait": "720x1280",
+              "Landscape": "1280x720",
+              "Price per second": "$0.10"
+            },
+            {
+              "Model": "sora-2-pro",
+              "Size": "720p",
+              "Portrait": "720x1280",
+              "Landscape": "1280x720",
+              "Price per second": "$0.30"
+            },
+            {
+              "Model": "1024p",
+              "Size": "1024x1792",
+              "Portrait": "1792x1024",
+              "Landscape": "$0.50",
+              "Price per second": ""
+            },
+            {
+              "Model": "1080p",
+              "Size": "1080x1920",
+              "Portrait": "1920x1080",
+              "Landscape": "$0.70",
+              "Price per second": ""
+            }
+          ]
+        },
+        "priority": {
+          "rows": [
+            {
+              "Model": "sora-2",
+              "Size": "720p",
+              "Portrait": "720x1280",
+              "Landscape": "1280x720",
+              "Price per second": "$0.10"
+            },
+            {
+              "Model": "sora-2-pro",
+              "Size": "720p",
+              "Portrait": "720x1280",
+              "Landscape": "1280x720",
+              "Price per second": "$0.30"
+            },
+            {
+              "Model": "1024p",
+              "Size": "1024x1792",
+              "Portrait": "1792x1024",
+              "Landscape": "$0.50",
+              "Price per second": ""
+            },
+            {
+              "Model": "1080p",
+              "Size": "1080x1920",
+              "Portrait": "1920x1080",
+              "Landscape": "$0.70",
+              "Price per second": ""
+            }
+          ]
         }
-      },
-      "pricing_control": {
-        "type": "content_switcher",
-        "dom_index": 1,
-        "aria_label": "Content switcher",
-        "options_from_dom": [
-          "standard",
-          "batch"
-        ]
       }
     },
     {
@@ -1104,16 +1982,39 @@
               "Estimated cost": "$0.006 / minute"
             }
           ]
+        },
+        "batch": {
+          "rows": [
+            {
+              "Model": "gpt-4o-transcribe",
+              "Use case": "Transcription",
+              "Input": "$2.50",
+              "Output": "$10.00",
+              "Estimated cost": "$0.006 / minute"
+            },
+            {
+              "Model": "gpt-4o-mini-transcribe",
+              "Use case": "Transcription",
+              "Input": "$1.25",
+              "Output": "$5.00",
+              "Estimated cost": "$0.003 / minute"
+            },
+            {
+              "Model": "gpt-4o-transcribe-diarize",
+              "Use case": "Transcription + diarization",
+              "Input": "$2.50",
+              "Output": "$10.00",
+              "Estimated cost": "$0.006 / minute"
+            },
+            {
+              "Model": "Whisper",
+              "Use case": "Transcription",
+              "Input": "-",
+              "Output": "-",
+              "Estimated cost": "$0.006 / minute"
+            }
+          ]
         }
-      },
-      "pricing_control": {
-        "type": "content_switcher",
-        "dom_index": 1,
-        "aria_label": "Content switcher",
-        "options_from_dom": [
-          "standard",
-          "batch"
-        ]
       }
     },
     {
@@ -1163,16 +2064,46 @@
               "Pricing": "$0.10 / GB-day after 1 GB free per account per month"
             }
           ]
+        },
+        "batch": {
+          "rows": [
+            {
+              "Tool": "Web search",
+              "Details": "gpt-4o and gpt-4.1 models",
+              "Pricing": "$10.00 / 1k calls Search content tokens billed at model rates."
+            },
+            {
+              "Tool": "Reasoning models, including gpt-5 and newer",
+              "Details": "$25.00 / 1k calls Search content tokens are free.",
+              "Pricing": ""
+            },
+            {
+              "Tool": "Containers",
+              "Details": "Now",
+              "Pricing": "1 GB $0.03, 4 GB $0.12, 16 GB $0.48, 64 GB $1.92 per container"
+            },
+            {
+              "Tool": "Starting March 31, 2026",
+              "Details": "1 GB $0.03, 4 GB $0.12, 16 GB $0.48, 64 GB $1.92 per 20-minute session per container",
+              "Pricing": ""
+            },
+            {
+              "Tool": "File search",
+              "Details": "Storage",
+              "Pricing": "$0.10 / GB per day (1 GB free)"
+            },
+            {
+              "Tool": "Tool call",
+              "Details": "$2.50 / 1k calls",
+              "Pricing": ""
+            },
+            {
+              "Tool": "Agent Kit",
+              "Details": "ChatKit file and image upload storage",
+              "Pricing": "$0.10 / GB-day after 1 GB free per account per month"
+            }
+          ]
         }
-      },
-      "pricing_control": {
-        "type": "content_switcher",
-        "dom_index": 1,
-        "aria_label": "Content switcher",
-        "options_from_dom": [
-          "standard",
-          "batch"
-        ]
       }
     },
     {
@@ -1350,16 +2281,71 @@
               "Output": ""
             }
           ]
+        },
+        "batch": {
+          "rows": [
+            {
+              "Category": "Deep research",
+              "Model": "o3-deep-research",
+              "Input": "$5.00",
+              "Cached input": "-",
+              "Output": "$20.00"
+            },
+            {
+              "Category": "o4-mini-deep-research",
+              "Model": "$1.00",
+              "Input": "-",
+              "Cached input": "$4.00",
+              "Output": ""
+            },
+            {
+              "Category": "Computer use",
+              "Model": "computer-use-preview",
+              "Input": "$1.50",
+              "Cached input": "-",
+              "Output": "$6.00"
+            }
+          ]
+        },
+        "priority": {
+          "rows": [
+            {
+              "Category": "Codex",
+              "Model": "gpt-5.3-codex",
+              "Input": "$3.50",
+              "Cached input": "$0.35",
+              "Output": "$28.00"
+            },
+            {
+              "Category": "gpt-5.2-codex",
+              "Model": "$3.50",
+              "Input": "$0.35",
+              "Cached input": "$28.00",
+              "Output": ""
+            },
+            {
+              "Category": "gpt-5.1-codex-max",
+              "Model": "$2.50",
+              "Input": "$0.25",
+              "Cached input": "$20.00",
+              "Output": ""
+            },
+            {
+              "Category": "gpt-5.1-codex",
+              "Model": "$2.50",
+              "Input": "$0.25",
+              "Cached input": "$20.00",
+              "Output": ""
+            },
+            {
+              "Category": "gpt-5-codex",
+              "Model": "$2.50",
+              "Input": "$0.25",
+              "Cached input": "$20.00",
+              "Output": ""
+            }
+          ]
         }
-      },
-      "pricing_control": {
-        "type": "content_switcher",
-        "dom_index": 2,
-        "aria_label": "Content switcher",
-        "options_from_dom": [
-          "standard",
-          "batch"
-        ]
       }
     },
     {
@@ -1446,16 +2432,81 @@
               "Output": "$1.60"
             }
           ]
+        },
+        "batch": {
+          "rows": [
+            {
+              "Model": "o4-mini-2025-04-16",
+              "Training": "$100.00 / hour",
+              "Input": "$2.00",
+              "Cached input": "$0.50",
+              "Output": "$8.00"
+            },
+            {
+              "Model": "o4-mini-2025-04-16 with data sharing",
+              "Training": "$100.00 / hour",
+              "Input": "$1.00",
+              "Cached input": "$0.25",
+              "Output": "$4.00"
+            },
+            {
+              "Model": "gpt-4.1-2025-04-14",
+              "Training": "$25.00",
+              "Input": "$1.50",
+              "Cached input": "$0.50",
+              "Output": "$6.00"
+            },
+            {
+              "Model": "gpt-4.1-mini-2025-04-14",
+              "Training": "$5.00",
+              "Input": "$0.40",
+              "Cached input": "$0.10",
+              "Output": "$1.60"
+            },
+            {
+              "Model": "gpt-4.1-nano-2025-04-14",
+              "Training": "$1.50",
+              "Input": "$0.10",
+              "Cached input": "$0.025",
+              "Output": "$0.40"
+            },
+            {
+              "Model": "gpt-4o-2024-08-06",
+              "Training": "$25.00",
+              "Input": "$2.225",
+              "Cached input": "$0.90",
+              "Output": "$12.50"
+            },
+            {
+              "Model": "gpt-4o-mini-2024-07-18",
+              "Training": "$3.00",
+              "Input": "$0.15",
+              "Cached input": "$0.075",
+              "Output": "$0.60"
+            },
+            {
+              "Model": "gpt-3.5-turbo Legacy",
+              "Training": "$8.00",
+              "Input": "$1.50",
+              "Cached input": "-",
+              "Output": "$3.00"
+            },
+            {
+              "Model": "davinci-002 Legacy",
+              "Training": "$6.00",
+              "Input": "$6.00",
+              "Cached input": "-",
+              "Output": "$6.00"
+            },
+            {
+              "Model": "babbage-002 Legacy",
+              "Training": "$0.40",
+              "Input": "$0.80",
+              "Cached input": "-",
+              "Output": "$0.90"
+            }
+          ]
         }
-      },
-      "pricing_control": {
-        "type": "content_switcher",
-        "dom_index": 2,
-        "aria_label": "Content switcher",
-        "options_from_dom": [
-          "standard",
-          "batch"
-        ]
       }
     }
   ]

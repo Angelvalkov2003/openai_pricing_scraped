@@ -1,12 +1,17 @@
 """
 OpenAI API pricing scraper (v4) for developers.openai.com.
 
-Uses the segmented **Content switcher** (``data-value`` from the page, not a fixed list)
-and optionally ``[role=tablist]``. Discovered ``options_from_dom`` are stored under
-``pricing_control``; ``by_pricing_tier`` drops **consecutive** duplicate fingerprints
-(tier N skipped when row data matches tier N-1 that was kept), so inactive tables
-do not repeat the same block under batch/flex/priority while real standard→batch
-changes are kept.
+Uses each **Content switcher** in document order (``aria-label="Content switcher"``,
+``data-value`` on visible buttons — no fixed tier list). Tables are mapped to the
+nearest preceding switcher; when several precede a table, the one with the **fewest**
+options is preferred if it has at most two. Sparse ranges between adjacent
+switchers extend ``owned`` sets for two-option strips. Merge uses
+``(section_heading, headers)`` as key so tier clicks are not lost when
+``table_index`` shifts. Every snapshot is merged under its tier key even when
+row bodies match another tier (e.g. Flex and Batch). After the switcher pass, a
+**tablist** pass (when present) is merged in. A final pass finds each table's
+closest preceding **Content switcher**, reads every visible ``data-value``,
+clicks each in DOM order, and merges rows under that tier key.
 """
 
 from __future__ import annotations
@@ -34,6 +39,9 @@ DEFAULT_PRICING_URL = (
 class OpenAIScraper4:
     WAIT_TIMEOUT = 30
     TIER_CLICK_PAUSE = 1.15
+    # Skip local switcher supplement when this many tables share one closest
+    # switcher (global bar); main ``_gather_with_switchers`` already covers it.
+    LOCAL_CONTENT_STRIP_MAX_TABLES = 6
 
     _DISCOVER_SWITCHER_LAYOUT_JS = r"""
     return JSON.stringify((function() {
@@ -45,46 +53,14 @@ class OpenAIScraper4:
             }
             return false;
         }
-        function fillSectionGaps(owners, topTables, main) {
-            var h2s = Array.prototype.slice.call(main.querySelectorAll('h2'));
-            function nearestPrecedingH2(tbl) {
-                var best = null;
-                for (var i = 0; i < h2s.length; i++) {
-                    if (h2s[i].compareDocumentPosition(tbl) & Node.DOCUMENT_POSITION_PRECEDING) {
-                        best = h2s[i];
-                    }
-                }
-                return best;
-            }
-            var buckets = {};
-            for (var ti = 0; ti < topTables.length; ti++) {
-                var h2 = nearestPrecedingH2(topTables[ti]);
-                var key = h2 ? ('h2_' + h2s.indexOf(h2)) : '_root';
-                if (!buckets[key]) buckets[key] = [];
-                buckets[key].push(ti);
-            }
-            function fillIndices(indices) {
-                var pending = [];
-                var lastPos = -1;
-                for (var k = 0; k < indices.length; k++) {
-                    var idx = indices[k];
-                    if (owners[idx] >= 0) {
-                        for (var p = 0; p < pending.length; p++) {
-                            owners[pending[p]] = owners[idx];
-                        }
-                        pending = [];
-                        lastPos = owners[idx];
-                    } else {
-                        pending.push(idx);
-                    }
-                }
-                for (var p = 0; p < pending.length; p++) {
-                    if (lastPos >= 0) owners[pending[p]] = lastPos;
-                }
-            }
-            for (var key in buckets) {
-                if (buckets.hasOwnProperty(key)) fillIndices(buckets[key]);
-            }
+        function btnVisible(b) {
+            if (!b) return false;
+            var r = b.getBoundingClientRect();
+            if (r.width < 1.5 || r.height < 1.5) return false;
+            var st = window.getComputedStyle(b);
+            if (st.display === 'none' || st.visibility === 'hidden') return false;
+            if (parseFloat(st.opacity || '1') < 0.05) return false;
+            return true;
         }
         var main = document.querySelector('main');
         if (!main) return { switchers: [], tableOwners: [] };
@@ -98,6 +74,7 @@ class OpenAIScraper4:
             var options_detail = [];
             for (var i = 0; i < opts.length; i++) {
                 var b = opts[i];
+                if (!btnVisible(b)) continue;
                 var v = (b.getAttribute('data-value') || '').trim().toLowerCase();
                 if (!v) continue;
                 var dis = !!(b.disabled || b.getAttribute('aria-disabled') === 'true');
@@ -128,28 +105,320 @@ class OpenAIScraper4:
         if (owners.length !== topTables.length) {
             owners = topTables.map(function() { return -1; });
         } else {
-            fillSectionGaps(owners, topTables, main);
+            for (var ti = 0; ti < owners.length; ti++) {
+                if (owners[ti] >= 0) continue;
+                var tbl = topTables[ti];
+                var prevTbl = ti > 0 ? topTables[ti - 1] : null;
+                var nextTbl = ti + 1 < topTables.length ? topTables[ti + 1] : null;
+                var bestPre = -1;
+                var s;
+                for (s = 0; s < switcherEls.length; s++) {
+                    var sw = switcherEls[s];
+                    if (!(sw.compareDocumentPosition(tbl) & Node.DOCUMENT_POSITION_FOLLOWING))
+                        continue;
+                    if (prevTbl && !(prevTbl.compareDocumentPosition(sw) & Node.DOCUMENT_POSITION_FOLLOWING))
+                        continue;
+                    bestPre = s;
+                }
+                if (bestPre >= 0) {
+                    owners[ti] = bestPre;
+                    continue;
+                }
+                for (s = 0; s < switcherEls.length; s++) {
+                    var sw2 = switcherEls[s];
+                    if (!(tbl.compareDocumentPosition(sw2) & Node.DOCUMENT_POSITION_FOLLOWING))
+                        continue;
+                    if (nextTbl && !(sw2.compareDocumentPosition(nextTbl) & Node.DOCUMENT_POSITION_FOLLOWING))
+                        continue;
+                    owners[ti] = s;
+                    break;
+                }
+            }
         }
-        return { switchers: switchers, tableOwners: owners };
+        for (var ti2 = 0; ti2 < owners.length; ti2++) {
+            var tblZ = topTables[ti2];
+            var prevZ = ti2 > 0 ? topTables[ti2 - 1] : null;
+            var cand = [];
+            for (var s2 = 0; s2 < switcherEls.length; s2++) {
+                var swZ = switcherEls[s2];
+                if (!(swZ.compareDocumentPosition(tblZ) & Node.DOCUMENT_POSITION_FOLLOWING))
+                    continue;
+                if (prevZ && !(prevZ.compareDocumentPosition(swZ) & Node.DOCUMENT_POSITION_FOLLOWING))
+                    continue;
+                cand.push(s2);
+            }
+            if (cand.length === 0) continue;
+            if (cand.length === 1) {
+                owners[ti2] = cand[0];
+                continue;
+            }
+            var small = cand.filter(function (cx) {
+                return ((switchers[cx].values || []).length <= 2);
+            });
+            var pool = small.length ? small : cand;
+            var bestS = pool[0];
+            var bestLen = (switchers[bestS].values || []).length || 999;
+            for (var ci = 1; ci < pool.length; ci++) {
+                var cx = pool[ci];
+                var lx = (switchers[cx].values || []).length || 999;
+                if (lx < bestLen) {
+                    bestS = cx;
+                    bestLen = lx;
+                }
+            }
+            owners[ti2] = bestS;
+        }
+        var sparseOwnedTablesBySwitcher = {};
+        for (var os = 0; os < switcherEls.length; os++) {
+            var nOpt = (switchers[os].values || []).length;
+            if (nOpt > 2) continue;
+            if (os + 1 >= switcherEls.length) {
+                sparseOwnedTablesBySwitcher[String(os)] = [];
+                continue;
+            }
+            var swB = switcherEls[os];
+            var nextB = switcherEls[os + 1];
+            var lst = [];
+            for (var tib = 0; tib < topTables.length; tib++) {
+                var tbB = topTables[tib];
+                if (!(swB.compareDocumentPosition(tbB) & Node.DOCUMENT_POSITION_FOLLOWING))
+                    continue;
+                if (!(tbB.compareDocumentPosition(nextB) & Node.DOCUMENT_POSITION_FOLLOWING))
+                    continue;
+                lst.push(tib + 1);
+            }
+            sparseOwnedTablesBySwitcher[String(os)] = lst;
+        }
+        return {
+            switchers: switchers,
+            tableOwners: owners,
+            sparseOwnedTablesBySwitcher: sparseOwnedTablesBySwitcher
+        };
     })());
     """
 
     _CLICK_SWITCHER_OPTION_JS = r"""
     var main = document.querySelector('main');
     if (!main) return false;
+    function btnVisible(b) {
+        if (!b) return false;
+        var r = b.getBoundingClientRect();
+        if (r.width < 1.5 || r.height < 1.5) return false;
+        var st = window.getComputedStyle(b);
+        if (st.display === 'none' || st.visibility === 'hidden') return false;
+        if (parseFloat(st.opacity || '1') < 0.05) return false;
+        return true;
+    }
     var list = main.querySelectorAll('[aria-label="Content switcher"]');
     var si = arguments[0];
     var val = (arguments[1] || '').trim().toLowerCase();
     if (si < 0 || si >= list.length) return false;
     var sw = list[si];
     var btns = sw.querySelectorAll('button[data-content-switcher-option][data-value]');
+    var matches = [];
     for (var i = 0; i < btns.length; i++) {
-        if ((btns[i].getAttribute('data-value') || '').trim().toLowerCase() === val) {
-            btns[i].click();
+        var b = btns[i];
+        if ((b.getAttribute('data-value') || '').trim().toLowerCase() !== val) continue;
+        if (b.disabled || b.getAttribute('aria-disabled') === 'true') continue;
+        matches.push(b);
+    }
+    for (var j = 0; j < matches.length; j++) {
+        if (btnVisible(matches[j])) {
+            matches[j].click();
             return true;
         }
     }
+    if (matches.length) {
+        matches[0].click();
+        return true;
+    }
     return false;
+    """
+
+    _VISIBLE_CONTENT_SWITCHER_VALUES_JS = r"""
+    return JSON.stringify((function() {
+        var main = document.querySelector('main');
+        if (!main) return [];
+        var si = arguments[0];
+        var list = main.querySelectorAll('[aria-label="Content switcher"]');
+        if (si < 0 || si >= list.length) return [];
+        var sw = list[si];
+        var opts = sw.querySelectorAll('button[data-content-switcher-option][data-value]');
+        var values = [];
+        var seen = {};
+        for (var i = 0; i < opts.length; i++) {
+            var b = opts[i];
+            if (b.disabled || b.getAttribute('aria-disabled') === 'true') continue;
+            var st = window.getComputedStyle(b);
+            if (st.display === 'none' || st.visibility === 'hidden') continue;
+            var v = (b.getAttribute('data-value') || '').trim().toLowerCase();
+            if (!v || seen[v]) continue;
+            seen[v] = 1;
+            values.push(v);
+        }
+        return values;
+    })());
+    """
+
+    _DISCOVER_LOCAL_CONTENT_SWITCHER_STRIPS_JS = r"""
+    return JSON.stringify((function() {
+        function cellText(c) {
+            if (!c) return '';
+            return (c.innerText || '').trim().replace(/\s+/g, ' ');
+        }
+        function isNestedTable(t) {
+            var p = t.parentElement;
+            while (p) {
+                if (p.tagName === 'TABLE' && p !== t) return true;
+                p = p.parentElement;
+            }
+            return false;
+        }
+        function nearestHeading(el) {
+            var cur = el;
+            while (cur) {
+                var sib = cur.previousElementSibling;
+                while (sib) {
+                    var tag = sib.tagName;
+                    if (tag === 'H2' || tag === 'H3' || tag === 'H4' || tag === 'H5')
+                        return cellText(sib);
+                    var h = sib.querySelector('h2,h3,h4,h5');
+                    if (h) return cellText(h);
+                    sib = sib.previousElementSibling;
+                }
+                cur = cur.parentElement;
+            }
+            return '';
+        }
+        function colspanOf(cell) {
+            var c = parseInt(cell.getAttribute('colspan') || '1', 10);
+            return isNaN(c) || c < 1 ? 1 : c;
+        }
+        function expandHeaderRow(tr) {
+            var out = [];
+            Array.prototype.forEach.call(tr.querySelectorAll('th,td'), function(cell) {
+                var t = cellText(cell);
+                var cs = colspanOf(cell);
+                for (var i = 0; i < cs; i++) out.push(t);
+            });
+            return out;
+        }
+        function headersFromThead(thead) {
+            var trs = thead.querySelectorAll('tr');
+            if (!trs.length) return [];
+            if (trs.length === 1) return expandHeaderRow(trs[0]);
+            var rows = Array.prototype.map.call(trs, expandHeaderRow);
+            var w = 0;
+            rows.forEach(function(r) { w = Math.max(w, r.length); });
+            for (var i = 0; i < rows.length; i++) {
+                while (rows[i].length < w) rows[i].push('');
+            }
+            var headers = [];
+            for (var c = 0; c < w; c++) {
+                var parts = [];
+                for (var r = 0; r < rows.length; r++) {
+                    var t = (rows[r][c] || '').trim();
+                    if (!t) continue;
+                    if (parts.length && parts[parts.length - 1] === t) continue;
+                    parts.push(t);
+                }
+                headers.push(parts.length ? parts.join(' | ') : ('col_' + c));
+            }
+            return headers;
+        }
+        function dedupeKeys(keys) {
+            var seen = {};
+            return keys.map(function(k, i) {
+                var base = k || ('col_' + i);
+                if (!seen[base]) {
+                    seen[base] = 1;
+                    return base;
+                }
+                seen[base] += 1;
+                return base + ' (' + seen[base] + ')';
+            });
+        }
+        function tableHeaders(tbl) {
+            var headers = [];
+            var thead = tbl.querySelector('thead');
+            if (thead) headers = dedupeKeys(headersFromThead(thead));
+            var bodyRows = [];
+            var bodies = tbl.tBodies && tbl.tBodies.length
+                ? Array.from(tbl.tBodies)
+                : [tbl];
+            bodies.forEach(function(tb) {
+                Array.prototype.forEach.call(tb.querySelectorAll('tr'), function(tr) {
+                    if (tr.closest('thead')) return;
+                    var cells = Array.from(tr.querySelectorAll('th,td')).map(cellText);
+                    if (cells.length) bodyRows.push(cells);
+                });
+            });
+            if (!headers.length && bodyRows.length) {
+                headers = dedupeKeys(bodyRows[0].slice());
+            }
+            return headers;
+        }
+        var main = document.querySelector('main');
+        if (!main) return [];
+        var switchers = Array.prototype.slice.call(
+            main.querySelectorAll('[aria-label="Content switcher"]')
+        );
+        var topTables = [];
+        Array.prototype.forEach.call(main.querySelectorAll('table'), function(tbl) {
+            if (!isNestedTable(tbl)) topTables.push(tbl);
+        });
+        var bySw = {};
+        for (var ti = 0; ti < topTables.length; ti++) {
+            var tbl = topTables[ti];
+            var swIdx = -1;
+            for (var si = switchers.length - 1; si >= 0; si--) {
+                if (!(switchers[si].compareDocumentPosition(tbl) & Node.DOCUMENT_POSITION_FOLLOWING))
+                    continue;
+                swIdx = si;
+                break;
+            }
+            if (swIdx < 0) continue;
+            var sw = switchers[swIdx];
+            var opts = sw.querySelectorAll('button[data-content-switcher-option][data-value]');
+            var vals = [];
+            for (var oi = 0; oi < opts.length; oi++) {
+                var b = opts[oi];
+                if (b.disabled || b.getAttribute('aria-disabled') === 'true') continue;
+                var stb = window.getComputedStyle(b);
+                if (stb.display === 'none' || stb.visibility === 'hidden') continue;
+                var dv = (b.getAttribute('data-value') || '').trim().toLowerCase();
+                if (!dv) continue;
+                vals.push(dv);
+            }
+            if (vals.length < 2) continue;
+            var sec = nearestHeading(tbl);
+            var hdrs = tableHeaders(tbl);
+            var key = swIdx + '';
+            if (!bySw[key]) {
+                bySw[key] = {
+                    switcher_index: swIdx,
+                    visible_values: vals,
+                    tables: []
+                };
+            }
+            var sig = sec + '\0' + hdrs.join('\1');
+            var dup = false;
+            for (var j = 0; j < bySw[key].tables.length; j++) {
+                var tj = bySw[key].tables[j];
+                if (tj.section_heading === sec && tj.headers.length === hdrs.length) {
+                    var same = true;
+                    for (var c = 0; c < hdrs.length; c++) {
+                        if (tj.headers[c] !== hdrs[c]) { same = false; break; }
+                    }
+                    if (same) { dup = true; break; }
+                }
+            }
+            if (!dup) {
+                bySw[key].tables.push({ section_heading: sec, headers: hdrs });
+            }
+        }
+        return Object.keys(bySw).map(function(k) { return bySw[k]; });
+    })());
     """
 
     _DISCOVER_TABLIST_LAYOUT_JS = r"""
@@ -161,47 +430,6 @@ class OpenAIScraper4:
                 p = p.parentElement;
             }
             return false;
-        }
-        function fillSectionGaps(owners, topTables, main) {
-            var h2s = Array.prototype.slice.call(main.querySelectorAll('h2'));
-            function nearestPrecedingH2(tbl) {
-                var best = null;
-                for (var i = 0; i < h2s.length; i++) {
-                    if (h2s[i].compareDocumentPosition(tbl) & Node.DOCUMENT_POSITION_PRECEDING) {
-                        best = h2s[i];
-                    }
-                }
-                return best;
-            }
-            var buckets = {};
-            for (var ti = 0; ti < topTables.length; ti++) {
-                var h2 = nearestPrecedingH2(topTables[ti]);
-                var key = h2 ? ('h2_' + h2s.indexOf(h2)) : '_root';
-                if (!buckets[key]) buckets[key] = [];
-                buckets[key].push(ti);
-            }
-            function fillIndices(indices) {
-                var pending = [];
-                var lastPos = -1;
-                for (var k = 0; k < indices.length; k++) {
-                    var idx = indices[k];
-                    if (owners[idx] >= 0) {
-                        for (var p = 0; p < pending.length; p++) {
-                            owners[pending[p]] = owners[idx];
-                        }
-                        pending = [];
-                        lastPos = owners[idx];
-                    } else {
-                        pending.push(idx);
-                    }
-                }
-                for (var p = 0; p < pending.length; p++) {
-                    if (lastPos >= 0) owners[pending[p]] = lastPos;
-                }
-            }
-            for (var key in buckets) {
-                if (buckets.hasOwnProperty(key)) fillIndices(buckets[key]);
-            }
         }
         var main = document.querySelector('main');
         if (!main) return { tablists: [], tableOwners: [] };
@@ -241,8 +469,6 @@ class OpenAIScraper4:
         }
         if (owners.length !== topTables.length) {
             owners = topTables.map(function() { return -1; });
-        } else {
-            fillSectionGaps(owners, topTables, main);
         }
         return { tablists: tablistMeta, tableOwners: owners };
     })());
@@ -547,9 +773,28 @@ class OpenAIScraper4:
         data = json.loads(raw) if raw else {}
         return data if isinstance(data, dict) else {"tablists": [], "tableOwners": []}
 
+    def _scroll_content_switcher_into_view(self, switcher_index: int) -> None:
+        assert self.driver
+        try:
+            self.driver.execute_script(
+                """
+                var main = document.querySelector('main');
+                if (!main) return;
+                var list = main.querySelectorAll('[aria-label="Content switcher"]');
+                var si = arguments[0];
+                if (si < 0 || si >= list.length) return;
+                list[si].scrollIntoView({block: 'center', inline: 'nearest'});
+                """,
+                int(switcher_index),
+            )
+            time.sleep(0.12)
+        except Exception:
+            pass
+
     def _click_switcher(self, switcher_index: int, value: str) -> bool:
         assert self.driver
         try:
+            self._scroll_content_switcher_into_view(switcher_index)
             return bool(
                 self.driver.execute_script(
                     self._CLICK_SWITCHER_OPTION_JS, int(switcher_index), value
@@ -558,9 +803,32 @@ class OpenAIScraper4:
         except Exception:
             return False
 
+    def _visible_content_switcher_values(self, switcher_index: int) -> List[str]:
+        """Live DOM order of visible ``data-value`` options (``role="group"`` switcher)."""
+        assert self.driver
+        try:
+            raw = self.driver.execute_script(
+                self._VISIBLE_CONTENT_SWITCHER_VALUES_JS, int(switcher_index)
+            )
+            data = json.loads(raw) if isinstance(raw, str) else raw
+            if not isinstance(data, list):
+                return []
+            return [str(x).strip().lower() for x in data if str(x).strip()]
+        except Exception:
+            return []
+
     _SWITCHER_OPTION_SELECTED_JS = r"""
     var main = document.querySelector('main');
     if (!main) return false;
+    function btnVisible(b) {
+        if (!b) return false;
+        var r = b.getBoundingClientRect();
+        if (r.width < 1.5 || r.height < 1.5) return false;
+        var st = window.getComputedStyle(b);
+        if (st.display === 'none' || st.visibility === 'hidden') return false;
+        if (parseFloat(st.opacity || '1') < 0.05) return false;
+        return true;
+    }
     var list = main.querySelectorAll('[aria-label="Content switcher"]');
     var si = arguments[0];
     var val = (arguments[1] || '').trim().toLowerCase();
@@ -570,6 +838,7 @@ class OpenAIScraper4:
     for (var i = 0; i < btns.length; i++) {
         var b = btns[i];
         if ((b.getAttribute('data-value') || '').trim().toLowerCase() !== val) continue;
+        if (!btnVisible(b)) continue;
         if (b.getAttribute('aria-checked') === 'true') return true;
         if (b.getAttribute('data-state') === 'on') return true;
     }
@@ -694,23 +963,18 @@ class OpenAIScraper4:
             "tables": self._collect_html_tables(),
         }
 
-    def _merge_snapshots(
-        self,
-        snapshots: List[Dict[str, Any]],
-        *,
-        table_pricing_control_by_index: Optional[Dict[int, Dict[str, Any]]] = None,
-    ) -> List[Dict[str, Any]]:
+    def _merge_snapshots(self, snapshots: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        Merge tier snapshots. For each table, skip a tier when its row fingerprint
-        equals the **last kept** tier's fingerprint (consecutive duplicates). Same
-        body repeated across many clicks collapses to one entry; ``standard / batch /
-        flex / priority`` with flex identical to batch still yields three keys.
+        Merge tier snapshots: each ``pricing_tier`` overwrites or sets
+        ``by_pricing_tier[tier]`` for that table key. Identical row bodies under
+        different tier names are all kept.
         """
-        bucket: Dict[Tuple[str, Tuple[str, ...], int], List[Dict[str, Any]]] = (
-            defaultdict(list)
-        )
-        key_order: List[Tuple[str, Tuple[str, ...], int]] = []
+        # Key by (section, headers) only: visible table_index can shift between tier
+        # clicks when the DOM reflows, which would drop batch rows for image/video.
+        bucket: Dict[Tuple[str, Tuple[str, ...]], List[Dict[str, Any]]] = defaultdict(list)
+        key_order: List[Tuple[str, Tuple[str, ...]]] = []
         seen_keys: set = set()
+        table_index_by_key: Dict[Tuple[str, Tuple[str, ...]], int] = {}
 
         for snap in snapshots:
             ptier = (snap.get("pricing_tier") or "").strip() or None
@@ -731,19 +995,19 @@ class OpenAIScraper4:
                 tidx = int(tbl.get("table_index") or 0)
                 if allowed is not None and tidx not in allowed:
                     continue
-                key = (sec, heads, tidx)
+                key = (sec, heads)
                 if key not in seen_keys:
                     seen_keys.add(key)
                     key_order.append(key)
+                    table_index_by_key[key] = tidx
                 bucket[key].append({"pricing_tier": ptier, "rows": tbl.get("rows") or []})
 
-        ctrl_map = table_pricing_control_by_index or {}
         merged: List[Dict[str, Any]] = []
         for key in key_order:
-            sec, heads, tidx = key
+            sec, heads = key
+            tidx = table_index_by_key.get(key, 0)
             variants = bucket[key]
             by_tier: Dict[str, Dict[str, Any]] = {}
-            last_kept_fp: Optional[str] = None
             for m in variants:
                 tier = (m.get("pricing_tier") or "").strip() or "default"
                 raw_rows = m.get("rows") or []
@@ -752,66 +1016,174 @@ class OpenAIScraper4:
                     if isinstance(raw_rows, list)
                     else []
                 )
-                fp = self._rows_fingerprint(rows)
-                if last_kept_fp is not None and fp == last_kept_fp:
-                    continue
-                last_kept_fp = fp
                 by_tier[tier] = {"rows": rows}
 
-            block: Dict[str, Any] = {
-                "section_heading": sec,
-                "headers": list(heads),
-                "table_index": tidx,
-                "by_pricing_tier": by_tier,
-            }
-            ctrl = ctrl_map.get(tidx)
-            if ctrl:
-                block["pricing_control"] = ctrl
-            merged.append(block)
+            merged.append(
+                {
+                    "section_heading": sec,
+                    "headers": list(heads),
+                    "table_index": tidx,
+                    "by_pricing_tier": by_tier,
+                }
+            )
         return merged
 
-    def _control_map_for_switchers(
-        self, layout: Dict[str, Any], owners: List[int]
-    ) -> Dict[int, Dict[str, Any]]:
-        out: Dict[int, Dict[str, Any]] = {}
-        for o, meta in enumerate(layout.get("switchers") or []):
-            if not isinstance(meta, dict):
-                continue
-            values = meta.get("values") or []
-            owned_1based = [ti + 1 for ti, ow in enumerate(owners) if ow == o]
-            for t1 in owned_1based:
-                detail = meta.get("options_detail")
-                if not isinstance(detail, list):
-                    detail = []
-                out[int(t1)] = {
-                    "type": "content_switcher",
-                    "dom_index": o,
-                    "aria_label": "Content switcher",
-                    "options_from_dom": [str(v) for v in values],
-                    "options_detail": detail,
-                }
-        return out
+    @staticmethod
+    def _extracted_table_key(block: Dict[str, Any]) -> Tuple[str, Tuple[str, ...]]:
+        return (
+            str(block.get("section_heading") or ""),
+            tuple(block.get("headers") or []),
+        )
 
-    def _control_map_for_tablists(
-        self, layout: Dict[str, Any], owners: List[int]
-    ) -> Dict[int, Dict[str, Any]]:
-        out: Dict[int, Dict[str, Any]] = {}
-        for o, meta in enumerate(layout.get("tablists") or []):
-            if not isinstance(meta, dict):
-                continue
-            labels = meta.get("labels") or []
-            owned_1based = [ti + 1 for ti, ow in enumerate(owners) if ow == o]
-            for t1 in owned_1based:
-                detail = meta.get("options_detail")
-                if not isinstance(detail, list):
-                    detail = []
-                out[int(t1)] = {
-                    "type": "tablist",
-                    "dom_index": o,
-                    "options_from_dom": [str(x) for x in labels],
-                    "options_detail": detail,
+    def _merge_extracted_table_lists(
+        self,
+        primary: List[Dict[str, Any]],
+        secondary: List[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        """
+        Merge ``by_pricing_tier`` from ``secondary`` into matching blocks in
+        ``primary`` (same section + headers). Keeps primary document order; appends
+        blocks only present in secondary.
+        """
+        order: List[Tuple[str, Tuple[str, ...]]] = []
+        by_k: Dict[Tuple[str, Tuple[str, ...]], Dict[str, Any]] = {}
+        for b in primary:
+            k = self._extracted_table_key(b)
+            if k not in by_k:
+                order.append(k)
+            by_k[k] = {
+                "section_heading": b.get("section_heading"),
+                "headers": list(b.get("headers") or []),
+                "table_index": b.get("table_index"),
+                "by_pricing_tier": dict(b.get("by_pricing_tier") or {}),
+            }
+        for eb in secondary:
+            k = self._extracted_table_key(eb)
+            if k not in by_k:
+                by_k[k] = {
+                    "section_heading": eb.get("section_heading"),
+                    "headers": list(eb.get("headers") or []),
+                    "table_index": eb.get("table_index"),
+                    "by_pricing_tier": dict(eb.get("by_pricing_tier") or {}),
                 }
-        return out
+                order.append(k)
+                continue
+            tmap = by_k[k].setdefault("by_pricing_tier", {})
+            for tier, payload in (eb.get("by_pricing_tier") or {}).items():
+                if tier not in tmap:
+                    tmap[tier] = payload
+        return [by_k[k] for k in order]
+
+    def _discover_local_content_switcher_strips(self) -> List[Dict[str, Any]]:
+        assert self.driver
+        try:
+            raw = self.driver.execute_script(
+                self._DISCOVER_LOCAL_CONTENT_SWITCHER_STRIPS_JS
+            )
+            data = json.loads(raw) if isinstance(raw, str) else raw
+            return data if isinstance(data, list) else []
+        except Exception:
+            return []
+
+    @staticmethod
+    def _tier_key_from_switcher_value(raw: Any) -> str:
+        return str(raw or "").strip().lower()
+
+    @staticmethod
+    def _rows_from_collect(
+        collected: List[Dict[str, Any]], sec: str, headers: List[str]
+    ) -> Optional[List[Dict[str, Any]]]:
+        heads_t = tuple(headers)
+        for t in collected:
+            if str(t.get("section_heading") or "") != sec:
+                continue
+            if tuple(t.get("headers") or []) == heads_t:
+                rows = t.get("rows")
+                if isinstance(rows, list):
+                    return list(rows)
+        return None
+
+    def _supplement_local_content_switcher_tiers(
+        self, extracted: List[Dict[str, Any]]
+    ) -> None:
+        """
+        For each Content switcher that sits immediately above one or more tables
+        (closest preceding in document order), read visible ``data-value`` tiers
+        from the DOM, click each in order, and write rows into
+        ``by_pricing_tier[<value>]``. Tier names are never hardcoded.
+        """
+        assert self.driver
+        strips = self._discover_local_content_switcher_strips()
+        if not strips:
+            return
+        for strip in strips:
+            if not isinstance(strip, dict):
+                continue
+            try:
+                sw_idx = int(strip.get("switcher_index", -1))
+            except (TypeError, ValueError):
+                continue
+            if sw_idx < 0:
+                continue
+            raw_vals = strip.get("visible_values") or []
+            if not isinstance(raw_vals, list) or len(raw_vals) < 2:
+                continue
+            ordered_keys: List[str] = []
+            seen_k: set = set()
+            for v in raw_vals:
+                k = self._tier_key_from_switcher_value(v)
+                if not k or k in seen_k:
+                    continue
+                seen_k.add(k)
+                ordered_keys.append(k)
+            if len(ordered_keys) < 2:
+                continue
+            live_k = self._visible_content_switcher_values(sw_idx)
+            for lk in live_k:
+                if lk not in ordered_keys:
+                    ordered_keys.append(lk)
+            restore_val = ordered_keys[0]
+            tables_spec = strip.get("tables") or []
+            if not isinstance(tables_spec, list) or not tables_spec:
+                continue
+            if len(tables_spec) > self.LOCAL_CONTENT_STRIP_MAX_TABLES:
+                if len(ordered_keys) < 4:
+                    continue
+
+            for tier_val in ordered_keys:
+                self._scroll_content_switcher_into_view(sw_idx)
+                if not self._click_switcher(sw_idx, tier_val):
+                    continue
+                wait_to = 18.0 if len(ordered_keys) > 3 else 12.0
+                if not self._wait_switcher_selected(sw_idx, tier_val, timeout=wait_to):
+                    continue
+                time.sleep(self.TIER_CLICK_PAUSE)
+                self._expand_after_tier_change()
+                collected = self._collect_html_tables()
+                for spec in tables_spec:
+                    if not isinstance(spec, dict):
+                        continue
+                    sec = str(spec.get("section_heading") or "")
+                    hdrs = spec.get("headers") or []
+                    if not isinstance(hdrs, list):
+                        continue
+                    hdrs_str = [str(h) for h in hdrs]
+                    rows = self._rows_from_collect(collected, sec, hdrs_str)
+                    if not rows:
+                        continue
+                    nested = self._nest_modality_subrows(rows)
+                    k = (sec, tuple(hdrs_str))
+                    for b in extracted:
+                        if self._extracted_table_key(b) == k:
+                            b.setdefault("by_pricing_tier", {})[tier_val] = {
+                                "rows": nested
+                            }
+                            break
+
+            self._scroll_content_switcher_into_view(sw_idx)
+            self._click_switcher(sw_idx, restore_val)
+            self._wait_switcher_selected(sw_idx, restore_val)
+            time.sleep(0.35)
 
     def _gather_with_switchers(self, layout: Dict[str, Any]) -> List[Dict[str, Any]]:
         assert self.driver
@@ -824,7 +1196,7 @@ class OpenAIScraper4:
                 owners.append(-1)
         switchers_meta: List[Dict[str, Any]] = layout.get("switchers") or []
         snapshots: List[Dict[str, Any]] = []
-        control_map = self._control_map_for_switchers(layout, owners)
+        sparse_owned = layout.get("sparseOwnedTablesBySwitcher") or {}
 
         self._scroll_main()
         time.sleep(0.35)
@@ -843,16 +1215,36 @@ class OpenAIScraper4:
 
         for o, meta in enumerate(switchers_meta):
             values = meta.get("values") or []
-            if not values:
-                continue
             disabled_vals = set()
             for d in meta.get("options_detail") or []:
                 if isinstance(d, dict) and d.get("disabled"):
                     dv = str(d.get("value") or "").strip().lower()
                     if dv:
                         disabled_vals.add(dv)
-            owned_1based = [ti + 1 for ti, ow in enumerate(owners) if ow == o]
+            extra_sparse = sparse_owned.get(str(o)) or sparse_owned.get(o)
+            if not isinstance(extra_sparse, list):
+                extra_sparse = []
+            try:
+                extra_ints = [int(x) for x in extra_sparse]
+            except (TypeError, ValueError):
+                extra_ints = []
+            owner_based = [ti + 1 for ti, ow in enumerate(owners) if ow == o]
+            owned_1based = sorted(set(owner_based + extra_ints))
             if not owned_1based:
+                continue
+            live = self._visible_content_switcher_values(o)
+            base_vals = [
+                str(v).strip().lower()
+                for v in (meta.get("values") or [])
+                if str(v).strip()
+            ]
+            if live:
+                values = list(live)
+                for bv in base_vals:
+                    if bv not in values:
+                        values.append(bv)
+                disabled_vals = set()
+            if not values:
                 continue
             for val in values:
                 if str(val).strip().lower() in disabled_vals:
@@ -860,8 +1252,10 @@ class OpenAIScraper4:
                 if not self._click_switcher(o, str(val)):
                     print(f"  switcher[{o}] could not select {val!r}")
                     continue
-                if not self._wait_switcher_selected(o, str(val)):
+                wait_to = 18.0 if len(values) > 3 else 12.0
+                if not self._wait_switcher_selected(o, str(val), timeout=wait_to):
                     print(f"  switcher[{o}] timeout waiting for {val!r}")
+                    continue
                 time.sleep(self.TIER_CLICK_PAUSE)
                 self._expand_after_tier_change()
                 snapshots.append(
@@ -875,9 +1269,7 @@ class OpenAIScraper4:
 
         self._scroll_main()
         self._expand_all_models_until_stable()
-        return self._merge_snapshots(
-            snapshots, table_pricing_control_by_index=control_map
-        )
+        return self._merge_snapshots(snapshots)
 
     def _gather_with_tablists(self, layout: Dict[str, Any]) -> List[Dict[str, Any]]:
         assert self.driver
@@ -890,7 +1282,6 @@ class OpenAIScraper4:
                 owners.append(-1)
         tablists_meta: List[Dict[str, Any]] = layout.get("tablists") or []
         snapshots: List[Dict[str, Any]] = []
-        control_map = self._control_map_for_tablists(layout, owners)
 
         self._scroll_main()
         time.sleep(0.35)
@@ -944,9 +1335,7 @@ class OpenAIScraper4:
 
         self._scroll_main()
         self._expand_all_models_until_stable()
-        return self._merge_snapshots(
-            snapshots, table_pricing_control_by_index=control_map
-        )
+        return self._merge_snapshots(snapshots)
 
     def _gather_single_pass(self) -> List[Dict[str, Any]]:
         assert self.driver
@@ -968,6 +1357,9 @@ class OpenAIScraper4:
             self.driver.get(self.pricing_url)
             self._wait_for_main()
             time.sleep(1.0)
+            self._scroll_main()
+            time.sleep(0.45)
+            self._expand_all_models_until_stable()
 
             sw_layout = self._discover_switcher_layout()
             switchers = sw_layout.get("switchers") or []
@@ -977,6 +1369,17 @@ class OpenAIScraper4:
 
             if has_switcher:
                 extracted = self._gather_with_switchers(sw_layout)
+                if self.use_tablist_fallback:
+                    tl_layout = self._discover_tablist_layout()
+                    tablists = tl_layout.get("tablists") or []
+                    if any(
+                        isinstance(t, dict) and (t.get("labels") or [])
+                        for t in tablists
+                    ):
+                        extracted_tabs = self._gather_with_tablists(tl_layout)
+                        extracted = self._merge_extracted_table_lists(
+                            extracted, extracted_tabs
+                        )
             elif self.use_tablist_fallback:
                 tl_layout = self._discover_tablist_layout()
                 tablists = tl_layout.get("tablists") or []
@@ -989,6 +1392,8 @@ class OpenAIScraper4:
                     extracted = self._gather_single_pass()
             else:
                 extracted = self._gather_single_pass()
+
+            self._supplement_local_content_switcher_tiers(extracted)
 
             now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
             self.pricing_data = {
